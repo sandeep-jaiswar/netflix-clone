@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+    --color-netflix-red: #E50914;
+    --color-netflix-red-dark: #B81D24;
+    --color-netflix-black: #141414;
+    --color-netflix-gray-dark: #222222;
+    --color-netflix-gray: #808080;
+    --color-netflix-gray-light: #E6E6E6;
+    --color-netflix-white: #FFFFFF;
+    --color-primary: '#E50914';
+    --color-background: '#141414';
+    --text-DEFAULT: '#E6E6E6';
+    --text-primary: '#FFFFFF';
+    --text-secondary: '#808080';
+    --text-accent: '#E50914';
+    --font-sans: sans-serif;
+    --shadow-card-hover:0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
