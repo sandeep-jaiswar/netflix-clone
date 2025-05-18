@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String // Remember to hash this!
+  name      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profiles  Profile[]
+}
+
+model Profile {
+  id           String         @id @default(cuid())
+  userId       String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchHistory WatchHistory[]
+  myList       MyListItem[]
+
+  @@unique([userId, name]) // A user cannot have two profiles with the same name
+}
+
+enum ContentType {
+  MOVIE
+  SHOW
+}
+
+model Content {
+  id              String      @id @default(cuid())
+  title           String
+  description     String?     @db.Text
+  releaseDate     DateTime?
+  durationMinutes Int? // For movies or average episode length for shows
+  type            ContentType
+  thumbnailUrl    String? // Small image for cards
+  heroImageUrl    String? // Large image for hero sections/details
+  previewVideoUrl String? // Short preview clip
+  ageRating       String? // e.g., "PG-13", "R", "TV-MA"
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  genres       ContentGenre[]
+  castMembers  ContentCast[]
+  episodes     Episode[] // Only relevant if type is SHOW
+  watchHistory WatchHistory[]
+  myListItems  MyListItem[]
+  categories   CategoryContent[] // For homepage rows like "Trending", "New Releases"
+  billboard    Billboard? // If this content is featured on the billboard
+}
+
+model Episode {
+  id              String    @id @default(cuid())
+  showId          String
+  seasonNumber    Int
+  episodeNumber   Int
+  title           String
+  description     String?   @db.Text
+  durationMinutes Int?
+  thumbnailUrl    String?
+  videoUrl        String? // URL to the actual video stream
+  releaseDate     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  show         Content        @relation(fields: [showId], references: [id], onDelete: Cascade)
+  watchHistory WatchHistory[]
+
+  @@unique([showId, seasonNumber, episodeNumber])
+}
+
+model Genre {
+  id       String         @id @default(cuid())
+  name     String         @unique // e.g., "Action", "Comedy", "Drama"
+  contents ContentGenre[]
+}
+
+// Join table for Content and Genre (many-to-many)
+model ContentGenre {
+  contentId  String
+  genreId    String
+  assignedAt DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  genre   Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, genreId])
+}
+
+model CastMember {
+  id       String        @id @default(cuid())
+  name     String
+  imageUrl String?
+  // role can be an enum if you have fixed roles like ACTOR, DIRECTOR
+  // Or a string if it's more flexible
+  // role      String?
+  contents ContentCast[]
+}
+
+// Join table for Content and CastMember (many-to-many)
+model ContentCast {
+  contentId     String
+  castMemberId  String
+  characterName String? // e.g., "Walter White" (if actor)
+  role          String // e.g., "Lead Actor", "Director" - NOW REQUIRED
+  assignedAt    DateTime @default(now())
+
+  content    Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  castMember CastMember @relation(fields: [castMemberId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, castMemberId, role]) // Role added to PK in case a cast member has multiple roles in one content (e.g. actor and director)
+}
+
+model WatchHistory {
+  id              String   @id @default(cuid())
+  profileId       String
+  contentId       String // Could be a movie or a show
+  episodeId       String? // Only if it's a show episode
+  watchedAt       DateTime @default(now())
+  progressSeconds Int      @default(0) // How many seconds into the video
+
+  profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  content Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  episode Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull) // SetNull if episode is deleted but want to keep history for the show
+
+  @@unique([profileId, contentId, episodeId]) // A profile can only have one history entry per content/episode
+  @@index([profileId])
+  @@index([profileId, contentId])
+}
+
+model MyListItem {
+  id        String   @id @default(cuid())
+  profileId String
+  contentId String // Movie or Show
+  addedAt   DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, contentId]) // Can only add a content to "My List" once per profile
+  @@index([profileId])
+}
+
+// Represents a row on the homepage, e.g., "Trending Now", "Comedies"
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g., "Trending Now", "Continue Watching"
+  description String?
+  order       Int // To define the order on the homepage, lower numbers come first
+
+  contents CategoryContent[]
+
+  @@index([order])
+}
+
+// Join table for Category (homepage rows) and Content (many-to-many)
+// This allows a piece of content to appear in multiple category rows
+model CategoryContent {
+  categoryId      String
+  contentId       String
+  orderInCategory Int // Order of the content within this specific category row
+  assignedAt      DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  content  Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, contentId])
+  @@index([categoryId, orderInCategory])
+}
+
+// Model for the "Billboard" or main hero section on the homepage
+// Usually features one prominent piece of content.
+model Billboard {
+  id           String  @id @default(cuid())
+  title        String // Can be custom for the billboard, e.g., "New Season Coming Soon!"
+  description  String? @db.Text
+  contentId    String  @unique // Each billboard features one unique content
+  isActive     Boolean @default(true) // In case you want to schedule billboards
+  imageUrl     String? // Custom image for the billboard, overrides content.heroImageUrl if provided
+  videoUrl     String? // Custom preview video for the billboard
+  callToAction String? // e.g., "Watch Now", "Learn More"
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+}
