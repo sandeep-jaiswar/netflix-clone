@@ -3,6 +3,7 @@ import React from 'react';
 interface LogoProps extends React.SVGProps<SVGSVGElement> {
   // We can add size props later if needed, e.g., small, medium, large
   // For now, it will scale based on the className width/height or its container
+  className?: string;
 }
 
 const Logo: React.FC<LogoProps> = ({ className = '', ...props }) => {

@@ -5,10 +5,9 @@ import {
   Button,
   Heading,
   Text,
-  Container,
   Logo,
 } from '@/components/atoms';
-import { X, PlayCircle, PlusCircle, CheckCircle, Volume2, VolumeX, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { X, PlayCircle, PlusCircle, CheckCircle, ThumbsUp } from 'lucide-react';
 import Image from 'next/image';
 
 interface DetailedContent {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Container, Logo } from '@/components/atoms';
-import { NavLink, SearchBar, ProfileDropdown } from '@/components/molecules'; 
+import { NavLink, SearchBar, ProfileDropdown } from '@/components/molecules';
 import { Bell } from 'lucide-react';
 
 const mainNavLinks = [
@@ -13,9 +13,7 @@ const mainNavLinks = [
   { href: '/my-list', label: 'My List' },
 ];
 
-interface HeaderProps {}
-
-const Header: React.FC<HeaderProps> = () => {
+const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -26,12 +24,12 @@ const Header: React.FC<HeaderProps> = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const currentUser = { 
-    name: 'John Doe', 
-    email: 'john.doe@example.com', 
+  const currentUser = {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
     // imageUrl: 'https://via.placeholder.com/100' 
     imageUrl: null // To test placeholder avatar
-  }; 
+  };
   const handleSignOut = () => {
     console.log('Signing out...');
     // Implement actual sign out logic here
@@ -59,13 +57,13 @@ const Header: React.FC<HeaderProps> = () => {
 
         <div className="flex items-center space-x-3 md:space-x-5">
           <SearchBar className="hidden sm:flex" />
-          
+
           <button aria-label="Notifications" className="text-[var(--color-netflix-white)] hover:text-[var(--color-netflix-gray-light)] transition-colors">
             <Bell size={22} />
           </button>
 
           <ProfileDropdown user={currentUser} onSignOut={handleSignOut} />
-          
+
         </div>
       </Container>
     </header>

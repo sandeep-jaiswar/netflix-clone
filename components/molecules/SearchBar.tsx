@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useCallback } from 'react';
 import { Input, Button } from '@/components/atoms';
 import { Search, X } from 'lucide-react';
 
@@ -18,7 +20,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
   className = '',
 }) => {
   const [query, setQuery] = useState(initialValue);
-  const [isFocused, setIsFocused] = useState(false);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -26,17 +27,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (onSearch) {
-      onSearch(query);
-    }
+    onSearch?.(query);
   };
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setQuery('');
-    if (onClear) {
-      onClear();
+    onClear?.();
+  },[onClear, setQuery]);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      handleClear();
     }
-  };
+  }, [handleClear]);
 
   return (
     <form
@@ -49,14 +52,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
         placeholder={placeholder}
         value={query}
         onChange={handleInputChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onKeyDown={handleKeyDown}
         leftIcon={Search}
         inputClassName={`
           bg-transparent border border-[var(--color-netflix-gray)] focus:border-white 
           transition-all duration-300 ease-in-out
-          h-9 text-sm
-          ${query ? 'pr-10' : 'pr-3'}
+          h-9 text-sm pr-10
         `}
         className="w-full"
       />
@@ -68,7 +69,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-transparent"
           aria-label="Clear search"
         >
-          <X size={18} className="text-[var(--color-netflix-gray-light)] hover:text-white" />
+          <X className="w-4 h-4 text-[var(--color-netflix-gray-light)] hover:text-white" />
         </Button>
       )}
     </form>
