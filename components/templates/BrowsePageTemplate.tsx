@@ -15,7 +15,7 @@ interface ContentItem {
 }
 
 interface ContentCategory {
-  id: string; 
+  id: string;
   title: string;
   items: ContentItem[];
 }
@@ -42,7 +42,7 @@ const BrowsePageTemplate: React.FC<BrowsePageTemplateProps> = ({
   return (
     <div className="bg-[var(--color-background)] min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-grow">
         <HeroSection
           title={heroData.title}
@@ -65,7 +65,7 @@ const BrowsePageTemplate: React.FC<BrowsePageTemplateProps> = ({
           ))}
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -3,7 +3,7 @@ import React from 'react';
 interface ContainerProps {
   children: React.ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements; // Allow rendering as div, section, main, etc.
+  as?: keyof React.JSX.IntrinsicElements; // Allow rendering as div, section, main, etc.
 }
 
 const Container: React.FC<ContainerProps> = ({

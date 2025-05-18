@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BrowsePageTemplate } from '@/components/templates/BrowsePageTemplate';
 import { ContentDetailModal } from '@/components/organisms';
+import { BrowsePageTemplate } from '@/components/templates';
 
 const mockHeroData = {
   id: 'hero-123',

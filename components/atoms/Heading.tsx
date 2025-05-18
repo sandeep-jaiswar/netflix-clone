@@ -2,39 +2,36 @@ import React from 'react';
 
 type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
-interface HeadingProps<C extends HeadingLevel = 'h1'> {
-  as?: C; // Allows rendering as any heading level, defaults to h1
+type HeadingOwnProps<C extends HeadingLevel> = {
+  as?: C;
   children: React.ReactNode;
   className?: string;
-  variant?: 'pageTitle' | 'sectionTitle' | 'cardTitle' | 'subheading'; // Semantic style variants
-  color?: 
-    | 'default' 
-    | 'primary' 
-    | 'secondary' 
-    | 'accent' 
-    | 'white' 
-    | 'black'; // Theme colors
+  variant?: 'pageTitle' | 'sectionTitle' | 'cardTitle' | 'subheading';
+  color?: 'default' | 'primary' | 'secondary' | 'accent' | 'white' | 'black';
   weight?: 'normal' | 'medium' | 'semibold' | 'bold';
   truncate?: boolean;
-} & React.ComponentPropsWithoutRef<C>;
+};
 
-const Heading = <C extends HeadingLevel = 'h1'>(({
+type HeadingProps<C extends HeadingLevel> = HeadingOwnProps<C> &
+  Omit<React.ComponentPropsWithoutRef<C>, keyof HeadingOwnProps<C>>;
+
+const Heading = <C extends HeadingLevel = 'h1'>({
   as,
   children,
   className = '',
-  variant = 'sectionTitle', // Default to sectionTitle as h1 is usually unique
-  color = 'primary', // Headings are often primary text color
+  variant = 'sectionTitle',
+  color = 'primary',
   weight,
   truncate = false,
   ...props
-}: HeadingProps<C>): JSX.Element => {
+}: HeadingProps<C>) => {
   const Component = as || 'h1';
 
   const baseStyle = 'leading-tight';
 
   const variantStyles = {
     pageTitle: 'text-3xl md:text-4xl lg:text-5xl font-bold',
-    sectionTitle: 'text-2xl md:text-3xl font-semibold', 
+    sectionTitle: 'text-2xl md:text-3xl font-semibold',
     cardTitle: 'text-lg md:text-xl font-medium',
     subheading: 'text-xl md:text-2xl font-normal',
   };
@@ -60,14 +57,14 @@ const Heading = <C extends HeadingLevel = 'h1'>(({
   return (
     <Component
       className={`${baseStyle} ${variantStyles[variant]} ${colorStyles[color]} ${
-        weight ? weightStyles[weight] : '' 
+        weight ? weightStyles[weight] : ''
       } ${truncateStyle} ${className}`}
       {...props}
     >
       {children}
     </Component>
   );
-});
+};
 
 Heading.displayName = 'Heading';
 

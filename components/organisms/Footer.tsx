@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Text, Heading } from '@/components/atoms';
+import { Container, Text } from '@/components/atoms';
 import Link from 'next/link';
 
 const footerSections = [

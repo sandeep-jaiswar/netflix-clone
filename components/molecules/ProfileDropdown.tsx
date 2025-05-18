@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { UserAvatar } from './UserAvatar';
 import { ChevronDown, LogOut, UserCircle, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Text } from '@/components/atoms';
+import UserAvatar from './UserAvatar';
 
 interface ProfileDropdownProps {
   user?: {

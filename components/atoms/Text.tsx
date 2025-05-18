@@ -1,26 +1,21 @@
 import React from 'react';
 
-type TextElement = 'p' | 'span' | 'div'; // Could add more like 'label' if needed
+type TextElement = 'p' | 'span' | 'div';
 
-interface TextProps<C extends TextElement = 'p'> {
-  as?: C; // Allows rendering as p, span, or div
+type TextOwnProps<C extends TextElement> = {
+  as?: C;
   children: React.ReactNode;
   className?: string;
-  variant?: 'body' | 'caption' | 'small' | 'subtle' | 'error'; // Predefined styles
-  color?: 
-    | 'default' 
-    | 'primary' 
-    | 'secondary' 
-    | 'accent' 
-    | 'white' 
-    | 'black' 
-    | 'red'; // Theme colors
+  variant?: 'body' | 'caption' | 'small' | 'subtle' | 'error';
+  color?: 'default' | 'primary' | 'secondary' | 'accent' | 'white' | 'black' | 'red';
   weight?: 'normal' | 'medium' | 'semibold' | 'bold';
-  truncate?: boolean; // Option for text-ellipsis
-} & React.ComponentPropsWithoutRef<C>;
+  truncate?: boolean;
+};
 
+type TextProps<C extends TextElement> = TextOwnProps<C> &
+  Omit<React.ComponentPropsWithoutRef<C>, keyof TextOwnProps<C>>;
 
-const Text = <C extends TextElement = 'p'>(({
+const Text = <C extends TextElement = 'p'>({
   as,
   children,
   className = '',
@@ -29,26 +24,26 @@ const Text = <C extends TextElement = 'p'>(({
   weight,
   truncate = false,
   ...props
-}: TextProps<C>): JSX.Element => {
+}: TextProps<C>) => {
   const Component = as || 'p';
 
-  const baseStyle = 'leading-normal'; // Default leading
+  const baseStyle = 'leading-normal';
 
   const variantStyles = {
-    body: 'text-base', // Typically 16px
-    caption: 'text-sm', // Typically 14px
-    small: 'text-xs',   // Typically 12px
-    subtle: 'text-sm text-[var(--text-secondary)]', // Smaller and secondary color
+    body: 'text-base',
+    caption: 'text-sm',
+    small: 'text-xs',
+    subtle: 'text-sm text-[var(--text-secondary)]',
     error: 'text-sm text-[var(--color-netflix-red-dark)]',
   };
 
   const colorStyles = {
     default: 'text-[var(--text-DEFAULT)]',
-    primary: 'text-[var(--text-primary)]', // Often same as netflix-white
+    primary: 'text-[var(--text-primary)]',
     secondary: 'text-[var(--text-secondary)]',
-    accent: 'text-[var(--text-accent)]', // netflix-red
+    accent: 'text-[var(--text-accent)]',
     white: 'text-[var(--color-netflix-white)]',
-    black: 'text-[var(--color-netflix-black)]', // For light backgrounds if ever needed
+    black: 'text-[var(--color-netflix-black)]',
     red: 'text-[var(--color-netflix-red)]',
   };
 
@@ -71,7 +66,7 @@ const Text = <C extends TextElement = 'p'>(({
       {children}
     </Component>
   );
-});
+};
 
 Text.displayName = 'Text';
 
