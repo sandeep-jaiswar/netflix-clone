@@ -14,7 +14,28 @@
     --text-primary: '#FFFFFF';
     --text-secondary: '#808080';
     --text-accent: '#E50914';
-    --font-sans: sans-serif;
+    --font-sans: fira-sans;
     --shadow-card-hover:0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
     --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
 }
+
+@layer base {
+    body {
+      @apply bg-background text-text font-sans antialiased; /* Use defined colors & font */
+    }
+    /* Example for custom scrollbar (optional) */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      @apply bg-netflix-gray-dark;
+    }
+    ::-webkit-scrollbar-thumb {
+      @apply bg-netflix-gray rounded;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-netflix-red;
+    }
+  }
+
