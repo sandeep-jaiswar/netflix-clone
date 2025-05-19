@@ -37,14 +37,19 @@ const ContentCard: React.FC<ContentCardProps> = ({
     };
 
   return (
-    <button
+    <div
       className="group relative aspect-[16/9] md:aspect-[18/10] lg:aspect-[16/9] w-full rounded-md overflow-hidden shadow-lg cursor-pointer 
                  bg-netflix-gray-dark hover:scale-105 md:hover:scale-110 lg:hover:scale-[1.15] hover:shadow-card-hover hover:z-20 
                  transition-all duration-200 ease-in-out"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      aria-label={`View details for ${title}`}
+      role="group"
+      aria-label={`Content card for ${title}`}
     >
+      <button
+        className="absolute inset-0 w-full h-full"
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        aria-label={`View details for ${title}`}
+      />
       <Image
         src={imageUrl}
         alt={title}
@@ -81,8 +86,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </button>
         </div>
       </div>
-    </button>
-  );
+    </div>
 };
 
 export default ContentCard;

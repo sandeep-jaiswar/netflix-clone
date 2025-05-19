@@ -24,16 +24,43 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const currentUser = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    // imageUrl: 'https://via.placeholder.com/100' 
-    imageUrl: null // To test placeholder avatar
+// Add this at the top of Header.tsx (or right above your component)
+interface HeaderProps {
+  currentUser: {
+    name: string;
+    email: string;
+    imageUrl: string | null;
   };
-  const handleSignOut = () => {
-    console.log('Signing out...');
-    // Implement actual sign out logic here
-  };
+  onSignOut: () => void;
+}
+
+// Update your component signature to accept props
+const Header: React.FC<HeaderProps> = ({ currentUser, onSignOut }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Now use currentUser and onSignOut in your JSX instead of hard-coded values
+  return (
+    <header className={isScrolled ? 'scrolled' : ''}>
+      <img
+        src={currentUser.imageUrl ?? 'https://via.placeholder.com/100'}
+        alt={currentUser.name}
+      />
+      <div>
+        <p>{currentUser.name}</p>
+        <p>{currentUser.email}</p>
+      </div>
+      <button onClick={onSignOut}>Sign Out</button>
+    </header>
+  );
+};
 
   return (
     <header

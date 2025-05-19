@@ -46,16 +46,35 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
   }, [onClose]);
 
   useEffect(() => {
+    // Store the element that had focus before opening the modal
+    const previouslyFocused = document.activeElement as HTMLElement;
+
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
+
+      // Focus the first focusable element in the modal
+      setTimeout(() => {
+        const focusableElements =
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const modal = document.querySelector('[role="dialog"]');
+        const firstFocusable = modal?.querySelector(focusableElements) as HTMLElement;
+        if (firstFocusable) {
+          firstFocusable.focus();
+        }
+      }, 50);
     } else {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'auto';
     }
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'auto';
+      // Restore focus when the modal closes
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+        previouslyFocused.focus();
+      }
     };
   }, [isOpen, handleKeyDown]);
 
@@ -67,12 +86,33 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
   const releaseYear = content.releaseDate ? new Date(content.releaseDate).getFullYear() : 'N/A';
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-0 md:p-4 overflow-y-auto"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      onKeyDown={(e) => {
+        if (e.key !== 'Tab') return;
+
+        const focusableElements =
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const modal = e.currentTarget;
+        const focusableContent = modal.querySelectorAll(focusableElements);
+
+        const firstFocusable = focusableContent[0] as HTMLElement;
+        const lastFocusable = focusableContent[
+          focusableContent.length - 1
+        ] as HTMLElement;
+
+        if (e.shiftKey && document.activeElement === firstFocusable) {
+          lastFocusable.focus();
+          e.preventDefault();
+        } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+          firstFocusable.focus();
+          e.preventDefault();
+        }
+      }}
     >
       <div 
         className="bg-[var(--color-netflix-gray-dark)] text-white rounded-lg shadow-xl w-full max-w-xs sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto scrollbar-hide relative"
@@ -92,8 +132,8 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
             <Image
               src={content.heroImageUrl}
               alt={`Backdrop for ${content.title}`}
-              layout="fill"
-              objectFit="cover"
+              fill
+              style={{ objectFit: 'cover' }}
               className="opacity-80"
             />
           ) : (
@@ -172,11 +212,25 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
           <div className="mt-6 md:mt-8">
              <Heading as="h3" variant="sectionTitle" className="!text-xl mb-3">More Like This</Heading>
              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-                {[1,2,3,4].map(i => (
-                    <div key={i} className="aspect-video bg-netflix-gray flex items-center justify-center rounded-md">
-                        <Text color="secondary" variant="small">Similar Title {i}</Text>
-                    </div>
-                ))}
+-                {[1,2,3,4].map(i => (
+-                    <div key={i} className="aspect-video bg-netflix-gray flex items-center justify-center rounded-md">
+-                        <Text color="secondary" variant="small">Similar Title {i}</Text>
+-                    </div>
+-                ))}
++                {similarItems?.map(item => (
++                  <div
++                    key={item.id}
++                    className="aspect-video bg-netflix-gray flex items-center justify-center rounded-md"
++                  >
++                    <Text color="secondary" variant="small">
++                      {item.title}
++                    </Text>
++                  </div>
++                )) || (
++                  <p className="text-center text-sm text-secondary">
++                    No recommendations available.
++                  </p>
++                )}
              </div>
           </div>
           

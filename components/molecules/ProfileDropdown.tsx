@@ -31,8 +31,15 @@ const DropdownItem: React.FC<DropdownItemProps> = ({ href, onClick, icon: Icon, 
   );
 
   if (href) {
-    // For Next.js Link with custom child, ensure it fills the clickable area
-    return <Link href={href} passHref legacyBehavior={false}><a role="menuitem" className="block w-full">{content}</a></Link>;
+    return (
+      <Link
+        href={href}
+        role="menuitem"
+        className="block w-full"
+      >
+        {content}
+      </Link>
+    );
   }
   return <div role="menuitem" onClick={onClick} className="block w-full">{content}</div>;
 };
@@ -84,19 +91,52 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onSignOut }) =>
           className="absolute top-full right-0 mt-2 w-56 bg-[var(--color-netflix-black)] border border-[var(--color-netflix-gray-dark)] rounded-md shadow-xl py-1 z-[60]"
           role="menu"
           aria-orientation="vertical"
-          aria-labelledby="user-menu-button" 
+          aria-labelledby="user-menu-button"
+          onKeyDown={(e) => {
+            const menuItems = Array.from(
+              e.currentTarget.querySelectorAll('[role="menuitem"]')
+            );
+            const currentIndex = menuItems.indexOf(
+              document.activeElement as HTMLElement
+            );
+
+            // Handle arrow navigation
+            if (e.key === 'ArrowDown' && currentIndex < menuItems.length - 1) {
+              (menuItems[currentIndex + 1] as HTMLElement).focus();
+              e.preventDefault();
+            }
+            if (e.key === 'ArrowUp' && currentIndex > 0) {
+              (menuItems[currentIndex - 1] as HTMLElement).focus();
+              e.preventDefault();
+            }
+            if (e.key === 'Escape') {
+              setIsOpen(false);
+            }
+          }}
         >
           <div className="px-4 py-3 border-b border-[var(--color-netflix-gray-dark)]">
-            <Text color="white" weight="semibold" truncate>{placeholderUser.name}</Text>
-            {placeholderUser.email && <Text variant="small" color="secondary" truncate>{placeholderUser.email}</Text>}
+            <Text color="white" weight="semibold" truncate>
+              {placeholderUser.name}
+            </Text>
+            {placeholderUser.email && (
+              <Text variant="small" color="secondary" truncate>
+                {placeholderUser.email}
+              </Text>
+            )}
           </div>
           <div role="none" className="py-1">
-            <DropdownItem href="/account" icon={UserCircle}>Account</DropdownItem>
-            <DropdownItem href="/help" icon={HelpCircle}>Help Center</DropdownItem>
+            <DropdownItem href="/account" icon={UserCircle}>
+              Account
+            </DropdownItem>
+            <DropdownItem href="/help" icon={HelpCircle}>
+              Help Center
+            </DropdownItem>
           </div>
           {onSignOut && (
             <div role="none" className="py-1 border-t border-[var(--color-netflix-gray-dark)]">
-              <DropdownItem onClick={onSignOut} icon={LogOut}>Sign out</DropdownItem>
+              <DropdownItem onClick={onSignOut} icon={LogOut}>
+                Sign out
+              </DropdownItem>
             </div>
           )}
         </div>

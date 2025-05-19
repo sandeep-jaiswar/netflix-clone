@@ -64,15 +64,29 @@ export default function HomePage() {
 
   const handleCardClick = (contentId: string) => {
     console.log(`Card clicked: ${contentId}. Opening modal...`);
-    const clickedItem = mockCategories.flatMap(cat => cat.items).find(item => item.id === contentId);
+    const clickedItem = mockCategories
+      .flatMap(cat => cat.items)
+      .find(item => item.id === contentId);
     setCurrentModalContent({
         ...mockSelectedContentData,
         id: contentId,
-        title: clickedItem ? `${clickedItem.title} - Details` : 'Detailed View',
-        heroImageUrl: clickedItem ? clickedItem.imageUrl.replace('500x281', '1280x720').replace('Content', 'Modal%20Hero') : mockSelectedContentData.heroImageUrl,
+        title: clickedItem
+          ? `${clickedItem.title} - Details`
+          : 'Detailed View',
+        heroImageUrl: clickedItem
+          ? generateModalImageUrl(clickedItem.imageUrl)
+          : mockSelectedContentData.heroImageUrl,
     });
     setIsModalOpen(true);
   };
+
+  // Helper function to generate modal image URLs in a more maintainable way
+  function generateModalImageUrl(thumbnailUrl: string) {
+    // Use URL constructor for safer manipulation or implement a more robust solution
+    return thumbnailUrl
+      .replace('500x281', '1280x720')
+      .replace('Content', 'Modal%20Hero');
+  }
 
   const handlePlayHero = (heroId: string) => {
     console.log(`Play hero: ${heroId}`);
@@ -85,10 +99,18 @@ export default function HomePage() {
         id: heroId,
         title: `${mockHeroData.title} - Details`,
         description: mockHeroData.description,
-        heroImageUrl: mockHeroData.backgroundImageUrl.replace('1920x1080', '1280x720').replace('Hero+Background','Hero+Modal+Detail'),
+-       heroImageUrl: mockHeroData.backgroundImageUrl.replace('1920x1080', '1280x720').replace('Hero+Background','Hero+Modal+Detail'),
++       heroImageUrl: generateHeroModalImageUrl(mockHeroData.backgroundImageUrl),
     });
     setIsModalOpen(true);
   };
+
+  // Helper function for hero modal image URLs
+  function generateHeroModalImageUrl(backgroundUrl: string) {
+    return backgroundUrl
+      .replace('1920x1080', '1280x720')
+      .replace('Hero+Background', 'Hero+Modal+Detail');
+  }
 
   const handlePlayContent = (contentId: string) => {
     console.log(`Play content: ${contentId}`);
