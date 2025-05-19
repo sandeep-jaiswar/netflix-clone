@@ -1,141 +1,138 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ContentDetailModal } from '@/components/organisms';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowsePageTemplate } from '@/components/templates';
+import { ContentDetailModal } from '@/components/organisms';
+import { TmdbContentItem, TmdbDetailedContent, TmdbApiListResponse } from '@/types/tmdb';
 
-// --- Types ---
-type ContentData = {
+interface PageCategory {
+  id: string;
+  title: string;
+  items: TmdbContentItem[];
+}
+
+interface PageHeroData {
   id: string;
   title: string;
   description: string;
-  type: 'MOVIE' | 'SHOW';
-  releaseDate: Date;
-  durationMinutes: number;
-  ageRating: string;
-  thumbnailUrl: string;
-  heroImageUrl: string;
-  previewVideoUrl: string;
-};
-
-// --- Mock Data ---
-const mockHeroData = {
-  id: 'hero-123',
-  title: 'Featured Movie Title',
-  description:
-    'This is a captivating description of the featured movie or show. It draws the audience in and makes them want to watch. Thrills, drama, and excitement await!',
-  backgroundImageUrl: 'https://via.placeholder.com/1920x1080/222222/FFFFFF?text=Hero+Background',
-};
-
-const mockCategories = [
-  {
-    id: 'trending-now',
-    title: 'Trending Now',
-    items: Array.from({ length: 7 }, (_, i) => ({
-      id: `content-${i + 1}`,
-      title: `Content ${i + 1}`,
-      imageUrl: `https://via.placeholder.com/500x281/000000/FFFFFF?text=Content+${i + 1}`,
-    })),
-  },
-  {
-    id: 'new-releases',
-    title: 'New Releases',
-    items: [
-      {
-        id: 'content-8',
-        title: 'Content 8',
-        imageUrl: 'https://via.placeholder.com/500x281/333333/FFFFFF?text=Content+8',
-      },
-      {
-        id: 'content-9',
-        title: 'Content 9',
-        imageUrl: 'https://via.placeholder.com/500x281/555555/FFFFFF?text=Content+9',
-      },
-    ],
-  },
-  {
-    id: 'comedies',
-    title: 'Comedies',
-    items: [
-      {
-        id: 'content-10',
-        title: 'Comedy 1',
-        imageUrl: 'https://via.placeholder.com/500x281/FFA500/000000?text=Comedy+1',
-      },
-      {
-        id: 'content-11',
-        title: 'Comedy 2',
-        imageUrl: 'https://via.placeholder.com/500x281/FFC0CB/000000?text=Comedy+2',
-      },
-    ],
-  },
-];
-
-const baseContent: ContentData = {
-  id: 'content-1',
-  title: 'Content 1 Detailed View',
-  description:
-    'This is a detailed description for Content 1. It explains the plot, characters, and themes.',
-  type: 'MOVIE',
-  releaseDate: new Date('2023-01-15'),
-  durationMinutes: 125,
-  ageRating: 'PG-13',
-  thumbnailUrl: 'https://via.placeholder.com/500x281/FF0000/FFFFFF?text=Content+1',
-  heroImageUrl: 'https://via.placeholder.com/1280x720/FF0000/FFFFFF?text=Content+1+Modal+Hero',
-  previewVideoUrl: 'your_preview_video.mp4',
-};
-
-// --- Helper Functions ---
-function generateModalImageUrl(thumbnailUrl: string) {
-  return thumbnailUrl
-    .replace('500x281', '1280x720')
-    .replace('Content', 'Modal%20Hero');
+  backgroundImageUrl: string;
+  type?: 'movie' | 'tv'; // Added to assist with play/more info clicks
 }
 
-function generateHeroModalImageUrl(backgroundUrl: string) {
-  return backgroundUrl
-    .replace('1920x1080', '1280x720')
-    .replace('Hero+Background', 'Hero+Modal+Detail');
-}
-
-// --- Component ---
 export default function HomePage() {
+  const [heroData, setHeroData] = useState<PageHeroData | null>(null);
+  const [categories, setCategories] = useState<PageCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentModalContent, setCurrentModalContent] = useState<ContentData | null>(null);
+  const [currentModalContent, setCurrentModalContent] = useState<TmdbDetailedContent | null>(null);
+  const [isModalLoading, setIsModalLoading] = useState(false);
 
-  const handleCardClick = (contentId: string) => {
-    console.log(`Card clicked: ${contentId}`);
-    const clickedItem = mockCategories.flatMap(cat => cat.items).find(item => item.id === contentId);
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const trendingResponse = await fetch('/api/tmdb/trending?mediaType=all&timeWindow=day&page=1');
+        if (!trendingResponse.ok) throw new Error(`Failed to fetch trending: ${trendingResponse.statusText}`);
+        const trendingData: TmdbApiListResponse<TmdbContentItem> = await trendingResponse.json();
 
-    if (!clickedItem) return;
+        if (trendingData.results && trendingData.results.length > 0) {
+          const firstTrending = trendingData.results[0];
+          setHeroData({
+            id: firstTrending.id,
+            title: firstTrending.title,
+            description: firstTrending.description || 'No description available.',
+            backgroundImageUrl: firstTrending.backdropUrl || firstTrending.imageUrl || 'https://via.placeholder.com/1920x1080?text=No+Hero+Image',
+            type: firstTrending.type || 'movie', // Default to movie if type is missing
+          });
+        } else {
+           setHeroData({
+            id: 'fallback-hero',
+            title: 'Welcome to Netflix Clone',
+            description: 'Explore a world of entertainment.',
+            backgroundImageUrl: 'https://via.placeholder.com/1920x1080/111/fff?text=NETFLIX',
+            type: 'movie',
+          });
+        }
 
-    setCurrentModalContent({
-      ...baseContent,
-      id: clickedItem.id,
-      title: `${clickedItem.title} - Details`,
-      heroImageUrl: generateModalImageUrl(clickedItem.imageUrl),
-    });
+        const categoriesToFetch = [
+          { id: 'trending-movies-week', title: 'Trending Movies This Week', endpoint: '/api/tmdb/trending?mediaType=movie&timeWindow=week&page=1' },
+          { id: 'trending-tv-week', title: 'Trending TV Shows This Week', endpoint: '/api/tmdb/trending?mediaType=tv&timeWindow=week&page=1' },
+        ];
+
+        const fetchedCategories: PageCategory[] = [];
+        for (const cat of categoriesToFetch) {
+          const catResponse = await fetch(cat.endpoint);
+          if (catResponse.ok) {
+            const catData: TmdbApiListResponse<TmdbContentItem> = await catResponse.json();
+            if(catData.results && catData.results.length > 0) {
+                fetchedCategories.push({ id: cat.id, title: cat.title, items: catData.results });
+            }
+          } else {
+            console.warn(`Failed to fetch category: ${cat.title}`);
+          }
+        }
+        setCategories(fetchedCategories);
+
+      } catch (e) {
+        console.error("Error fetching page data:", e);
+        setError(e instanceof Error ? e.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleCardClick = useCallback(async (contentId: string, contentTypeFromCard?: 'movie' | 'tv') => {
+    let resolvedContentType = contentTypeFromCard;
+    if (!resolvedContentType) {
+        const itemFromCategories = categories.flatMap(c => c.items).find(i => i.id === contentId);
+        resolvedContentType = itemFromCategories?.type || 'movie';
+    }
+
+    console.log(`Card clicked: ${contentId} (Type: ${resolvedContentType}). Opening modal...`);
     setIsModalOpen(true);
-  };
+    setIsModalLoading(true);
+    setCurrentModalContent(null);
 
-  const handleMoreInfoHero = (heroId: string) => {
-    console.log(`More info hero: ${heroId}`);
-    setCurrentModalContent({
-      ...baseContent,
-      id: heroId,
-      title: `${mockHeroData.title} - Details`,
-      description: mockHeroData.description,
-      heroImageUrl: generateHeroModalImageUrl(mockHeroData.backgroundImageUrl),
-    });
-    setIsModalOpen(true);
-  };
+    try {
+      const response = await fetch(`/api/tmdb/details/${resolvedContentType}/${contentId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to fetch details for ${contentId}`);
+      }
+      const data: TmdbDetailedContent = await response.json();
+      setCurrentModalContent(data);
+    } catch (e) {
+      console.error("Error fetching modal data:", e);
+      setCurrentModalContent({
+          id: contentId,
+          title: "Error Loading Details",
+          description: e instanceof Error ? e.message : "Could not load content details.",
+          type: resolvedContentType.toUpperCase() as 'MOVIE' | 'SHOW',
+          heroImageUrl: 'https://via.placeholder.com/1280x720/000/fff?text=Error',
+      });
+    } finally {
+      setIsModalLoading(false);
+    }
+  }, [categories]);
 
   const handlePlayHero = (heroId: string) => {
     console.log(`Play hero: ${heroId}`);
+    if (heroData?.type) handleCardClick(heroId, heroData.type);
+  };
+  
+  const handleMoreInfoHero = (heroId: string) => {
+    console.log(`More info hero: ${heroId}`);
+    if (heroData?.type) handleCardClick(heroId, heroData.type);
   };
 
   const handlePlayContent = (contentId: string) => {
-    console.log(`Play content: ${contentId}`);
+    console.log(`Play content directly: ${contentId}`);
   };
 
   const handleMyListContent = (contentId: string) => {
@@ -147,33 +144,49 @@ export default function HomePage() {
     setCurrentModalContent(null);
   };
 
-  const handlePlayFromModal = (id: string) => {
-    console.log(`Play from modal: ${id}`);
-  };
+  if (isLoading && !heroData) {
+    return <div className="h-screen w-screen flex items-center justify-center bg-background text-white"><p>Loading Netflix...</p></div>;
+  }
 
-  const handleMyListFromModal = (id: string, isInMyList: boolean) => {
-    console.log(`Toggle My List from modal: ${id}, isInMyList: ${isInMyList}`);
-  };
+  if (error) {
+    return <div className="h-screen w-screen flex items-center justify-center bg-background text-red-500"><p>Error: {error}</p></div>;
+  }
+  
+  if (!heroData) {
+      return <div className="h-screen w-screen flex items-center justify-center bg-background text-white"><p>Could not load critical data.</p></div>;
+  }
 
   return (
     <>
       <BrowsePageTemplate
-        heroData={mockHeroData}
-        categories={mockCategories}
-        onCardClick={handleCardClick}
+        heroData={heroData}
+        categories={categories}
+        onCardClick={(id) => {
+            let itemType: 'movie' | 'tv' | undefined = undefined;
+            for (const category of categories) {
+                const foundItem = category.items.find(item => item.id === id);
+                if (foundItem && foundItem.type) {
+                    itemType = foundItem.type;
+                    break;
+                }
+            }
+            handleCardClick(id, itemType || 'movie');
+        }}
         onPlayHero={handlePlayHero}
         onMoreInfoHero={handleMoreInfoHero}
         onPlayContent={handlePlayContent}
         onMyListContent={handleMyListContent}
       />
-
-      {isModalOpen && currentModalContent && (
+      
+      {isModalOpen && (
         <ContentDetailModal
-          content={currentModalContent}
+          content={isModalLoading ? {id: 'loading', title: 'Loading...', description: '', type: 'MOVIE', heroImageUrl: ''} : currentModalContent}
           isOpen={isModalOpen}
           onClose={closeModal}
-          onPlay={handlePlayFromModal}
-          onMyListToggle={handleMyListFromModal}
+          onPlay={(id) => console.log(`Play from modal: ${id}`)}
+          onMyListToggle={(id, isInMyList) => {
+            console.log(`Toggle My List from modal for: ${id}. Currently in list: ${isInMyList}`);
+          }}
         />
       )}
     </>
