@@ -13,18 +13,6 @@ const mainNavLinks = [
   { href: '/my-list', label: 'My List' },
 ];
 
-const Header = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-// Add this at the top of Header.tsx (or right above your component)
 interface HeaderProps {
   currentUser: {
     name: string;
@@ -34,7 +22,6 @@ interface HeaderProps {
   onSignOut: () => void;
 }
 
-// Update your component signature to accept props
 const Header: React.FC<HeaderProps> = ({ currentUser, onSignOut }) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -45,22 +32,6 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onSignOut }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Now use currentUser and onSignOut in your JSX instead of hard-coded values
-  return (
-    <header className={isScrolled ? 'scrolled' : ''}>
-      <img
-        src={currentUser.imageUrl ?? 'https://via.placeholder.com/100'}
-        alt={currentUser.name}
-      />
-      <div>
-        <p>{currentUser.name}</p>
-        <p>{currentUser.email}</p>
-      </div>
-      <button onClick={onSignOut}>Sign Out</button>
-    </header>
-  );
-};
 
   return (
     <header
@@ -85,12 +56,14 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onSignOut }) => {
         <div className="flex items-center space-x-3 md:space-x-5">
           <SearchBar className="hidden sm:flex" />
 
-          <button aria-label="Notifications" className="text-[var(--color-netflix-white)] hover:text-[var(--color-netflix-gray-light)] transition-colors">
+          <button
+            aria-label="Notifications"
+            className="text-[var(--color-netflix-white)] hover:text-[var(--color-netflix-gray-light)] transition-colors"
+          >
             <Bell size={22} />
           </button>
 
-          <ProfileDropdown user={currentUser} onSignOut={handleSignOut} />
-
+          <ProfileDropdown user={currentUser} onSignOut={onSignOut} />
         </div>
       </Container>
     </header>

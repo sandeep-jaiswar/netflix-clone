@@ -41,7 +41,11 @@ const BrowsePageTemplate: React.FC<BrowsePageTemplateProps> = ({
 }) => {
   return (
     <div className="bg-[var(--color-background)] min-h-screen flex flex-col">
-      <Header />
+      <Header currentUser={{
+        email: "test@test.com",
+        imageUrl: "",
+        name: "Test User"
+      }} onSignOut={() => {}} />
 
       <main className="flex-grow">
         <HeroSection

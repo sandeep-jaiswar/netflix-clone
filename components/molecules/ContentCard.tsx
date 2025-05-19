@@ -87,6 +87,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
         </div>
       </div>
     </div>
+  );
 };
 
 export default ContentCard;
