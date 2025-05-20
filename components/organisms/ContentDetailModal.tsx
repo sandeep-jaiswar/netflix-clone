@@ -13,14 +13,15 @@ import Image from 'next/image';
 interface DetailedContent {
   id: string;
   title: string;
-  description: string;
+  description?: string; 
   type: 'MOVIE' | 'SHOW';
   releaseDate?: Date | string;
   durationMinutes?: number;
-  ageRating?: string;
-  thumbnailUrl?: string;
-  heroImageUrl?: string;
-  previewVideoUrl?: string;
+  ageRating?: string | null; 
+  imageUrl?: string | null; // Aligned with TmdbDetailedContent (was thumbnailUrl)
+  heroImageUrl?: string | null; 
+  previewVideoUrl?: string | null; // Changed to allow null
+  isInMyList?: boolean; 
 }
 
 interface ContentDetailModalProps {
@@ -29,7 +30,7 @@ interface ContentDetailModalProps {
   onClose: () => void;
   onPlay: (id: string) => void;
   onMyListToggle: (id: string, isInMyList: boolean) => void;
-  similarItems?: { id: string; title: string }[]; // Added prop
+  similarItems?: { id: string; title: string }[]; 
 }
 
 const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
@@ -77,7 +78,7 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
 
   if (!isOpen || !content) return null;
 
-  const isInMyList = content.id === 'content-1'; // Replace with real logic
+  const isInMyList = content.isInMyList ?? false; 
   const releaseYear = content.releaseDate ? new Date(content.releaseDate).getFullYear() : 'N/A';
 
   return (
@@ -171,7 +172,7 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             <div className="md:col-span-2 space-y-3">
               <div className="flex items-center space-x-3 text-sm mb-2 flex-wrap">
-                <Text color="accent" weight="bold">97% Match</Text>
+                <Text color="accent" weight="bold">97% Match</Text> {/* Placeholder */}
                 <Text color="secondary">{releaseYear}</Text>
                 {content.durationMinutes && (
                   <Text color="secondary">
@@ -186,7 +187,7 @@ const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
                 <Text className="border border-white/40 px-1.5 py-0.5 text-xs rounded-sm">HD</Text>
               </div>
               <Text variant="body" className="leading-relaxed">
-                {content.description}
+                {content.description || 'No description available.'} 
               </Text>
             </div>
 
