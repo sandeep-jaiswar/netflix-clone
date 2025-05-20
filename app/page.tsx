@@ -16,144 +16,144 @@ interface PageHeroData {
   title: string;
   description: string;
   backgroundImageUrl: string;
-  type?: 'movie' | 'tv'; // Added to assist with play/more info clicks
+  type?: 'movie' | 'tv';
 }
 
 export default function HomePage() {
   const [heroData, setHeroData] = useState<PageHeroData | null>(null);
   const [categories, setCategories] = useState<PageCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingPage, setIsLoadingPage] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentModalContent, setCurrentModalContent] = useState<TmdbDetailedContent | null>(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
+  const [myListIds, setMyListIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoadingPage(true);
+      setPageError(null);
       try {
-        const trendingResponse = await fetch('/api/tmdb/trending?mediaType=all&timeWindow=day&page=1');
-        if (!trendingResponse.ok) throw new Error(`Failed to fetch trending: ${trendingResponse.statusText}`);
-        const trendingData: TmdbApiListResponse<TmdbContentItem> = await trendingResponse.json();
+        const heroApiResponse = await fetch('/api/tmdb/trending?mediaType=all&timeWindow=day&page=1');
+        if (!heroApiResponse.ok) throw new Error(`Failed to fetch hero data: ${heroApiResponse.statusText}`);
+        const heroApiData: TmdbApiListResponse<TmdbContentItem> = await heroApiResponse.json();
 
-        if (trendingData.results && trendingData.results.length > 0) {
-          const firstTrending = trendingData.results[0];
+        if (heroApiData.results && heroApiData.results.length > 0) {
+          const firstItem = heroApiData.results[0];
           setHeroData({
-            id: firstTrending.id,
-            title: firstTrending.title,
-            description: firstTrending.description || 'No description available.',
-            backgroundImageUrl: firstTrending.backdropUrl || firstTrending.imageUrl || 'https://via.placeholder.com/1920x1080?text=No+Hero+Image',
-            type: firstTrending.type || 'movie', // Default to movie if type is missing
+            id: firstItem.id,
+            title: firstItem.title,
+            description: firstItem.description || 'No description available.',
+            backgroundImageUrl: firstItem.backdropUrl || firstItem.imageUrl || 'https://via.placeholder.com/1920x1080?text=No+Hero+Image',
+            type: firstItem.type || 'movie',
           });
         } else {
            setHeroData({
-            id: 'fallback-hero',
-            title: 'Welcome to Netflix Clone',
-            description: 'Explore a world of entertainment.',
-            backgroundImageUrl: 'https://via.placeholder.com/1920x1080/111/fff?text=NETFLIX',
-            type: 'movie',
+            id: 'fallback-hero', title: 'Welcome', description: 'Explore movies and shows.',
+            backgroundImageUrl: 'https://via.placeholder.com/1920x1080/111/fff?text=NETFLIX', type: 'movie',
           });
         }
 
         const categoriesToFetch = [
-          { id: 'trending-movies-week', title: 'Trending Movies This Week', endpoint: '/api/tmdb/trending?mediaType=movie&timeWindow=week&page=1' },
-          { id: 'trending-tv-week', title: 'Trending TV Shows This Week', endpoint: '/api/tmdb/trending?mediaType=tv&timeWindow=week&page=1' },
+          { id: 'trending-movies-week', title: 'Trending Movies', endpoint: '/api/tmdb/trending?mediaType=movie&timeWindow=week&page=1' },
+          { id: 'trending-tv-week', title: 'Trending TV Shows', endpoint: '/api/tmdb/trending?mediaType=tv&timeWindow=week&page=1' },
         ];
 
-        const fetchedCategories: PageCategory[] = [];
-        for (const cat of categoriesToFetch) {
-          const catResponse = await fetch(cat.endpoint);
-          if (catResponse.ok) {
-            const catData: TmdbApiListResponse<TmdbContentItem> = await catResponse.json();
-            if(catData.results && catData.results.length > 0) {
-                fetchedCategories.push({ id: cat.id, title: cat.title, items: catData.results });
+        const fetchedCategoriesPromises = categoriesToFetch.map(async (cat) => {
+          try {
+            const catResponse = await fetch(cat.endpoint);
+            if (catResponse.ok) {
+              const catData: TmdbApiListResponse<TmdbContentItem> = await catResponse.json();
+              if (catData.results && catData.results.length > 0) {
+                const itemsWithMyListStatus = catData.results.map(item => ({
+                    ...item,
+                    isInMyList: myListIds.has(item.id)
+                }));
+                return { id: cat.id, title: cat.title, items: itemsWithMyListStatus };
+              }
             }
-          } else {
-            console.warn(`Failed to fetch category: ${cat.title}`);
-          }
-        }
-        setCategories(fetchedCategories);
+             else { console.warn(`Failed to fetch category: ${cat.title} - ${catResponse.statusText}`); }
+          } catch (catError) { console.error(`Error fetching category ${cat.title}:`, catError); }
+          return null;
+        });
+        
+        const resolvedCategories = (await Promise.all(fetchedCategoriesPromises)).filter(Boolean) as PageCategory[];
+        setCategories(resolvedCategories);
 
       } catch (e) {
         console.error("Error fetching page data:", e);
-        setError(e instanceof Error ? e.message : 'An unknown error occurred');
+        setPageError(e instanceof Error ? e.message : 'An unknown error occurred');
       } finally {
-        setIsLoading(false);
+        setIsLoadingPage(false);
       }
     };
-
     fetchData();
-  }, []);
+  }, [myListIds]);
 
-  const handleCardClick = useCallback(async (contentId: string, contentTypeFromCard?: 'movie' | 'tv') => {
-    let resolvedContentType = contentTypeFromCard;
-    if (!resolvedContentType) {
-        const itemFromCategories = categories.flatMap(c => c.items).find(i => i.id === contentId);
-        resolvedContentType = itemFromCategories?.type || 'movie';
-    }
-
-    console.log(`Card clicked: ${contentId} (Type: ${resolvedContentType}). Opening modal...`);
+  const handleCardClick = useCallback(async (contentId: string, contentTypeFromCard: 'movie' | 'tv') => {
     setIsModalOpen(true);
     setIsModalLoading(true);
     setCurrentModalContent(null);
-
     try {
-      const response = await fetch(`/api/tmdb/details/${resolvedContentType}/${contentId}`);
+      const response = await fetch(`/api/tmdb/details/${contentTypeFromCard}/${contentId}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to fetch details for ${contentId}`);
       }
-      const data: TmdbDetailedContent = await response.json();
+      let data: TmdbDetailedContent = await response.json();
+      data = { ...data, isInMyList: myListIds.has(data.id) };
       setCurrentModalContent(data);
     } catch (e) {
       console.error("Error fetching modal data:", e);
       setCurrentModalContent({
-          id: contentId,
-          title: "Error Loading Details",
+          id: contentId, title: "Error Loading Details",
           description: e instanceof Error ? e.message : "Could not load content details.",
-          type: resolvedContentType.toUpperCase() as 'MOVIE' | 'SHOW',
+          type: contentTypeFromCard.toUpperCase() as 'MOVIE' | 'SHOW',
           heroImageUrl: 'https://via.placeholder.com/1280x720/000/fff?text=Error',
+          isInMyList: myListIds.has(contentId),
       });
     } finally {
       setIsModalLoading(false);
     }
-  }, [categories]);
+  }, [myListIds]);
 
   const handlePlayHero = (heroId: string) => {
-    console.log(`Play hero: ${heroId}`);
     if (heroData?.type) handleCardClick(heroId, heroData.type);
   };
   
   const handleMoreInfoHero = (heroId: string) => {
-    console.log(`More info hero: ${heroId}`);
     if (heroData?.type) handleCardClick(heroId, heroData.type);
   };
 
-  const handlePlayContent = (contentId: string) => {
-    console.log(`Play content directly: ${contentId}`);
-  };
+  const handlePlayContent = (contentId: string) => { console.log("Play content: ", contentId); };
 
-  const handleMyListContent = (contentId: string) => {
-    console.log(`Toggle My List for content: ${contentId}`);
-  };
+  const handleMyListToggle = useCallback((contentId: string, currentStatus: boolean) => {
+    console.log(`Toggling My List for ${contentId}. Was in list: ${currentStatus}`);
+    setMyListIds(prev => {
+      const newSet = new Set(prev);
+      if (currentStatus) newSet.delete(contentId);
+      else newSet.add(contentId);
+      return newSet;
+    });
+    if (currentModalContent && currentModalContent.id === contentId) {
+        setCurrentModalContent(prev => prev ? ({ ...prev, isInMyList: !currentStatus }) : null);
+    }
+  }, [currentModalContent]);
 
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentModalContent(null);
   };
 
-  if (isLoading && !heroData) {
+  if (isLoadingPage && !heroData) {
     return <div className="h-screen w-screen flex items-center justify-center bg-background text-white"><p>Loading Netflix...</p></div>;
   }
-
-  if (error) {
-    return <div className="h-screen w-screen flex items-center justify-center bg-background text-red-500"><p>Error: {error}</p></div>;
+  if (pageError) {
+    return <div className="h-screen w-screen flex items-center justify-center bg-background text-red-500"><p>Error: {pageError}</p></div>;
   }
-  
   if (!heroData) {
-      return <div className="h-screen w-screen flex items-center justify-center bg-background text-white"><p>Could not load critical data.</p></div>;
+      return <div className="h-screen w-screen flex items-center justify-center bg-background text-white"><p>Could not load page data.</p></div>;
   }
 
   return (
@@ -161,32 +161,20 @@ export default function HomePage() {
       <BrowsePageTemplate
         heroData={heroData}
         categories={categories}
-        onCardClick={(id) => {
-            let itemType: 'movie' | 'tv' | undefined = undefined;
-            for (const category of categories) {
-                const foundItem = category.items.find(item => item.id === id);
-                if (foundItem && foundItem.type) {
-                    itemType = foundItem.type;
-                    break;
-                }
-            }
-            handleCardClick(id, itemType || 'movie');
-        }}
+        onCardClick={handleCardClick} // Type is now expected from ContentRow
         onPlayHero={handlePlayHero}
         onMoreInfoHero={handleMoreInfoHero}
         onPlayContent={handlePlayContent}
-        onMyListContent={handleMyListContent}
+        onMyListContent={handleMyListToggle}
       />
       
       {isModalOpen && (
         <ContentDetailModal
-          content={isModalLoading ? {id: 'loading', title: 'Loading...', description: '', type: 'MOVIE', heroImageUrl: ''} : currentModalContent}
+          content={isModalLoading ? {id: 'loading', title: 'Loading...', description: '', type: 'MOVIE', heroImageUrl: '', isInMyList: false} : currentModalContent}
           isOpen={isModalOpen}
           onClose={closeModal}
           onPlay={(id) => console.log(`Play from modal: ${id}`)}
-          onMyListToggle={(id, isInMyList) => {
-            console.log(`Toggle My List from modal for: ${id}. Currently in list: ${isInMyList}`);
-          }}
+          onMyListToggle={handleMyListToggle}
         />
       )}
     </>

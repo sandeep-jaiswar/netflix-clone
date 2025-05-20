@@ -1,27 +1,26 @@
-// Basic content item for cards and rows
-export interface TmdbContentItem {
-  id: string; 
-  title: string;
-  imageUrl: string | null; 
-  description?: string;
-  releaseDate?: string; 
-  type?: 'movie' | 'tv'; 
-  backdropUrl?: string | null;
-  voteAverage?: number; 
-}
+// types/tmdb.ts
 
-// Detailed content for the modal
-export interface TmdbDetailedContent extends TmdbContentItem {
+export interface TmdbContentItem {
   id: string;
   title: string;
-  description: string;
+  imageUrl: string | null;
+  backdropUrl?: string | null;
+  description?: string;
+  releaseDate?: string;
+  releaseYear?: string;
+  type?: 'movie' | 'tv';
+  voteAverage?: number;
+  matchPercentage?: number;
+  duration?: string;
+  genres?: string[];
+  maturityRating?: string; 
+}
+
+export interface TmdbDetailedContent extends Omit<TmdbContentItem, 'type' | 'genres'> {
   type: 'MOVIE' | 'SHOW';
-  releaseDate?: string; 
   durationMinutes?: number;
-  ageRating?: string | null; 
-  thumbnailUrl?: string | null; 
-  heroImageUrl?: string | null; 
-  previewVideoUrl?: string | null; 
+  ageRating?: string | null;
+  previewVideoUrl?: string | null;
   genres?: { id: string; name: string }[];
   castMembers?: {
     id: string;
@@ -29,11 +28,10 @@ export interface TmdbDetailedContent extends TmdbContentItem {
     characterName?: string;
     imageUrl?: string | null;
   }[];
-  seasonsCount?: number; // For TV shows
+  seasonsCount?: number;
   // isInMyList: boolean; 
 }
 
-// API response for a list of items (e.g., trending, discover)
 export interface TmdbApiListResponse<T> {
   results: T[];
   page: number;
