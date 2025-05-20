@@ -6,10 +6,10 @@ import { Heading, Text } from '@/components/atoms';
 import { PlayCircle, PlusCircle, CheckCircle, ChevronDownCircle } from 'lucide-react';
 import { TmdbContentItem } from '@/types/tmdb';
 
-interface ContentCardProps extends TmdbContentItem {
-  onClick?: (id: string, type?: 'movie' | 'tv') => void;
-  onPlay?: (id: string, type?: 'movie' | 'tv') => void;
-  onMyListToggle?: (id: string, currentStatus: boolean, type?: 'movie' | 'tv') => void;
+interface ContentCardProps extends TmdbContentItem { 
+  onClick?: (id: string, type: 'movie' | 'tv') => void; 
+  onPlay?: (id: string) => void; 
+  onMyListToggle?: (id: string, currentStatus: boolean, type: 'movie' | 'tv') => void;
   isInMyList?: boolean;
 }
 
@@ -38,12 +38,20 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }
   };
 
-  const stopPropagationAndHandle = 
-    (handler?: (id: string, ...args: any[]) => void, ...extraArgs: any[]) => 
-    (e: React.MouseEvent) => {
+  // Overload signatures for type safety
+  function stopPropagationAndHandle(handler: ((id: string) => void) | undefined): (e: React.MouseEvent) => void;
+  function stopPropagationAndHandle(handler: ((id: string, itemType: 'movie' | 'tv') => void) | undefined, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
+  function stopPropagationAndHandle(handler: ((id: string, currentStatus: boolean, itemType: 'movie' | 'tv') => void) | undefined, currentStatus: boolean, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function stopPropagationAndHandle(handler?: (...args: any[]) => void, ...extraArgs: any[]): (e: React.MouseEvent) => void {
+    return (e: React.MouseEvent) => {
       e.stopPropagation();
-      handler?.(id, ...extraArgs);
+      if (handler) {
+        handler(id, ...extraArgs);
+      }
     };
+  }
 
   return (
     <div
@@ -87,7 +95,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
         
         <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 md:mb-2 pointer-events-auto">
           <button 
-            onClick={stopPropagationAndHandle(onPlay, type)} 
+            onClick={stopPropagationAndHandle(onPlay)} 
             className="p-1 sm:p-1.5 bg-white hover:bg-gray-200 rounded-full text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`Play ${title}`}
           >

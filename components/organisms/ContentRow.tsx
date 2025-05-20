@@ -8,15 +8,17 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 interface ContentItem {
   id: string;
   title: string;
-  imageUrl: string;
+  imageUrl: string | null;
+  type: 'movie' | 'tv'; 
+  isInMyList?: boolean; // Added for My List status
 }
 
 interface ContentRowProps {
   title: string;
   items: ContentItem[];
-  onCardClick?: (id: string) => void;
-  onPlay?: (id: string) => void;
-  onMyList?: (id: string) => void;
+  onCardClick?: (id: string, type: 'movie' | 'tv') => void; 
+  onPlay?: (id: string) => void; 
+  onMyList?: (id: string, currentStatus: boolean, type: 'movie' | 'tv') => void; // Updated signature
 }
 
 const ContentRow: React.FC<ContentRowProps> = ({
@@ -104,9 +106,13 @@ const ContentRow: React.FC<ContentRowProps> = ({
                 id={item.id}
                 title={item.title}
                 imageUrl={item.imageUrl}
-                onClick={onCardClick}
-                onPlay={onPlay}
-                onMyList={onMyList}
+                type={item.type} 
+                isInMyList={item.isInMyList} // Pass isInMyList to ContentCard
+                onClick={onCardClick ? () => onCardClick(item.id, item.type) : undefined}
+                onPlay={onPlay ? () => onPlay(item.id) : undefined}
+                // ContentCard's onMyListToggle expects (id, currentStatus, type?)
+                // The onMyList from props is (id, currentStatus, type)
+                onMyListToggle={onMyList ? () => onMyList(item.id, !!item.isInMyList, item.type) : undefined}
               />
             </div>
           ))}

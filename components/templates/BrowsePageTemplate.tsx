@@ -11,7 +11,9 @@ interface HeroContent {
 interface ContentItem {
   id: string;
   title: string;
-  imageUrl: string;
+  imageUrl: string | null;
+  type: 'movie' | 'tv'; 
+  isInMyList?: boolean; // Added for My List status
 }
 
 interface ContentCategory {
@@ -23,11 +25,11 @@ interface ContentCategory {
 interface BrowsePageTemplateProps {
   heroData: HeroContent;
   categories: ContentCategory[];
-  onCardClick: (contentId: string) => void;
+  onCardClick: (contentId: string, contentType: 'movie' | 'tv') => void; 
   onPlayHero: (heroId: string) => void;
   onMoreInfoHero: (heroId: string) => void;
-  onPlayContent: (contentId: string) => void;
-  onMyListContent: (contentId: string) => void;
+  onPlayContent: (contentId: string) => void; // Assuming play doesn't need more args here
+  onMyListContent: (contentId: string, currentStatus: boolean, contentType: 'movie' | 'tv') => void; // Updated signature
 }
 
 const BrowsePageTemplate: React.FC<BrowsePageTemplateProps> = ({
@@ -62,9 +64,9 @@ const BrowsePageTemplate: React.FC<BrowsePageTemplateProps> = ({
               key={category.id}
               title={category.title}
               items={category.items}
-              onCardClick={onCardClick}
+              onCardClick={onCardClick} 
               onPlay={onPlayContent}
-              onMyList={onMyListContent}
+              onMyList={onMyListContent} // Passed down
             />
           ))}
         </div>

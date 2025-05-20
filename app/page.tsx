@@ -107,7 +107,9 @@ export default function HomePage() {
     } catch (e) {
       console.error("Error fetching modal data:", e);
       setCurrentModalContent({
-          id: contentId, title: "Error Loading Details",
+          id: contentId, 
+          title: "Error Loading Details",
+          imageUrl: null, // Added missing required property
           description: e instanceof Error ? e.message : "Could not load content details.",
           type: contentTypeFromCard.toUpperCase() as 'MOVIE' | 'SHOW',
           heroImageUrl: 'https://via.placeholder.com/1280x720/000/fff?text=Error',
@@ -170,7 +172,7 @@ export default function HomePage() {
       
       {isModalOpen && (
         <ContentDetailModal
-          content={isModalLoading ? {id: 'loading', title: 'Loading...', description: '', type: 'MOVIE', heroImageUrl: '', isInMyList: false} : currentModalContent}
+          content={isModalLoading ? {id: 'loading', title: 'Loading...', imageUrl: null, description: '', type: 'MOVIE', heroImageUrl: '', isInMyList: false} : currentModalContent}
           isOpen={isModalOpen}
           onClose={closeModal}
           onPlay={(id) => console.log(`Play from modal: ${id}`)}
