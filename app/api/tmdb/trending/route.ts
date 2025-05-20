@@ -7,13 +7,10 @@ import { getTmdbImageUrl, getTmdbApiUrl, TMDB_API_KEY, TMDB_BASE_URL } from '@/u
 const movieGenresMap = new Map<number, string>();
 const tvGenresMap = new Map<number, string>();
 
-// Note: TMDB_API_KEY and TMDB_BASE_URL are imported but also used directly here for fetchGenres.
-// This is acceptable as fetchGenres is a local helper for this specific route's caching need.
 async function fetchGenres() {
   if (!TMDB_API_KEY) return; 
   if (movieGenresMap.size === 0) {
     try {
-      // Using TMDB_BASE_URL directly here as getTmdbApiUrl is for client-like calls with API key in params
       const res = await fetch(`${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}`);
       if (res.ok) {
         const data: { genres: TmdbGenre[] } = await res.json();
@@ -32,11 +29,10 @@ async function fetchGenres() {
   }
 }
 
-// Changed from interface to type to correctly extend/intersect with TmdbListItem (a union type)
 type TmdbTrendingListItem = TmdbListItem & {
   media_type?: 'movie' | 'tv' | 'person';
   genre_ids?: number[];
-  vote_average?: number; // Ensure vote_average is part of the type
+  vote_average?: number; 
 };
 
 const transformTmdbItemToContentItem = (item: TmdbTrendingListItem, itemMediaTypeKnown?: 'movie' | 'tv'): TmdbContentItem | null => {
@@ -56,7 +52,7 @@ const transformTmdbItemToContentItem = (item: TmdbTrendingListItem, itemMediaTyp
     backdropUrl: getTmdbImageUrl(item.backdrop_path, 'w780'),
     description: item.overview,
     releaseDate: releaseDate,
-    type: mediaType,
+    type: mediaType, // TmdbContentItem.type is now required
     voteAverage: item.vote_average,
     matchPercentage: item.vote_average ? Math.round(item.vote_average * 10) : undefined,
     releaseYear: releaseDate ? new Date(releaseDate).getFullYear().toString() : undefined,
@@ -70,7 +66,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'TMDB API key is not configured' }, { status: 500 });
   }
   
-  // Fetch genres if maps are empty (simple in-memory cache)
   if (movieGenresMap.size === 0 || tvGenresMap.size === 0) {
       await fetchGenres();
   }
@@ -93,8 +88,12 @@ export async function GET(request: Request) {
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json({ error: `TMDB Error: ${errorData.status_message || response.statusText}` }, { status: response.status });
+      const errorData = await response.json().catch(() => ({ status_message: response.statusText })); // Ensure errorData is always an object
+      console.error('TMDB API Error (Trending):', errorData);
+      return NextResponse.json({ 
+        error: `Failed to fetch trending data from TMDB: ${errorData.status_message || response.statusText}`,
+        details: errorData
+      }, { status: response.status });
     }
 
     const data: { page: number; results: TmdbTrendingListItem[]; total_pages: number; total_results: number } = await response.json();
@@ -117,6 +116,9 @@ export async function GET(request: Request) {
     if (error instanceof Error) {
         errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch trending data due to an unexpected error.',
+      details: errorMessage
+     }, { status: 500 });
   }
 }

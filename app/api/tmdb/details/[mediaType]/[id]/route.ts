@@ -1,18 +1,6 @@
-import { NextResponse } from 'next/server';
-import {
-  TMDBMovieDetails,
-  TMDBTVDetails,
-  TMDBVideo,
-  TMDBGenre,
-  TMDBCast,
-} from '@/types/tmdb';
-
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-
-const getImageUrl = (path: string | null, size: string = 'original') => {
-  return path ? `https://image.tmdb.org/t/p/${size}${path}` : null;
-};
+import { NextRequest, NextResponse } from 'next/server';
+import type { TmdbDetailedResponse, TmdbVideo, TmdbReleaseDateResult, TmdbContentRatingResult, TmdbGenre, TmdbCastMember } from '@/types/tmdb-api';
+import { getTmdbImageUrl, getTmdbApiUrl, TMDB_API_KEY } from '@/utils/tmdb-api-helpers';
 
 interface DetailedContentData {
   id: string;
@@ -22,140 +10,98 @@ interface DetailedContentData {
   releaseDate?: string;
   durationMinutes?: number;
   ageRating?: string;
-  thumbnailUrl?: string | null;
+  thumbnailUrl?: string | null; // Note: This was aligned to imageUrl in TmdbDetailedContent if that's the primary one
   heroImageUrl?: string | null;
   previewVideoUrl?: string | null;
   genres?: { id: string; name: string }[];
-  castMembers?: {
-    id: string;
-    name: string;
-    characterName?: string;
-    imageUrl?: string | null;
-  }[];
+  castMembers?: {id: string; name: string; characterName?: string; imageUrl?: string | null }[];
   seasonsCount?: number;
 }
 
-const transformDetailedData = (
-  data: TMDBMovieDetails | TMDBTVDetails,
-  mediaType: 'movie' | 'tv',
-  videos: TMDBVideo[]
-): Omit<DetailedContentData, 'genres' | 'castMembers' | 'seasonsCount' | 'ageRating'> => {
-  const trailer = videos.find(
-    (v) => v.type === 'Trailer' && v.site === 'YouTube'
-  ) || videos.find((v) => v.site === 'YouTube');
-
-  let durationMinutes: number | undefined;
-  if (mediaType === 'movie' && 'runtime' in data) {
+const transformDetailedData = (data: TmdbDetailedResponse, mediaType: 'movie' | 'tv', videos: TmdbVideo[]): Omit<DetailedContentData, 'genres' | 'castMembers' | 'seasonsCount' | 'ageRating' | 'thumbnailUrl'> => {
+  const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
+  let durationMinutes;
+  if (mediaType === 'movie' && 'runtime' in data && data.runtime) {
     durationMinutes = data.runtime;
-  } else if (mediaType === 'tv' && 'episode_run_time' in data && data.episode_run_time.length > 0) {
+  } else if (mediaType === 'tv' && 'episode_run_time' in data && data.episode_run_time && data.episode_run_time.length > 0) {
     durationMinutes = data.episode_run_time[0];
   }
-
   return {
     id: String(data.id),
-    title: 'title' in data ? data.title : data.name,
+    title: ('title' in data ? data.title : data.name) || 'Untitled',
     description: data.overview || '',
     type: mediaType.toUpperCase() as 'MOVIE' | 'SHOW',
-    releaseDate:
-      mediaType === 'movie'
-        ? (data as TMDBMovieDetails).release_date
-        : (data as TMDBTVDetails).first_air_date,
-    durationMinutes,
-    thumbnailUrl: getImageUrl(data.poster_path, 'w500'),
-    heroImageUrl: getImageUrl(data.backdrop_path, 'original'),
+    releaseDate: ('release_date' in data ? data.release_date : data.first_air_date),
+    durationMinutes: durationMinutes,
+    // thumbnailUrl: getTmdbImageUrl(data.poster_path, 'w500'), // Use imageUrl in TmdbDetailedContent
+    heroImageUrl: getTmdbImageUrl(data.backdrop_path, 'original'),
     previewVideoUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
   };
 };
 
 export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ mediaType: string; id: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ mediaType: string; id: string }> } 
 ) {
   if (!TMDB_API_KEY) {
-    return NextResponse.json(
-      { error: 'TMDB API key is not configured' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'TMDB API key is not configured' }, { status: 500 });
   }
-
   const { mediaType, id } = await params;
-
   if (mediaType !== 'movie' && mediaType !== 'tv') {
-    return NextResponse.json(
-      { error: 'Invalid media type. Must be "movie" or "tv".' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid media type' }, { status: 400 });
   }
 
   try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/${mediaType}/${id}?api_key=${TMDB_API_KEY}&append_to_response=videos,credits,external_ids,content_ratings,release_dates`
-    );
+    const apiUrl = getTmdbApiUrl(`/${mediaType}/${id}`, { append_to_response: 'videos,credits,external_ids,content_ratings,release_dates' });
+    const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('TMDB API Error (Details):', errorData);
-      return NextResponse.json(
-        {
-          error:
-            `Failed to fetch details: ${errorData.status_message || response.statusText}`,
-        },
-        { status: response.status }
-      );
+      const errorText = await response.text().catch(() => `(Failed to get error text, status: ${response.status})`); 
+      console.error('TMDB API Error (Details):', response.status, errorText);
+      return NextResponse.json({ error: `Failed to fetch details from TMDB (status: ${response.status})`, details: errorText}, { status: response.status });
     }
 
-    const data: TMDBMovieDetails | TMDBTVDetails = await response.json();
-
+    const data: TmdbDetailedResponse = await response.json();
+    
     let ageRating: string | null = null;
-    if (mediaType === 'movie') {
-      const movieData = data as TMDBMovieDetails;
-      const usRelease = movieData.release_dates?.results.find((r) => r.iso_3166_1 === 'US');
-      if (usRelease) {
-        const cert = usRelease.release_dates.find(
-          (rd) => rd.certification && [1, 3, 4].includes(rd.type)
-        );
-        ageRating = cert?.certification || usRelease.release_dates[0]?.certification || null;
-      }
-    } else if (mediaType === 'tv') {
-      const tvData = data as TMDBTVDetails;
-      const usRating = tvData.content_ratings?.results.find((r) => r.iso_3166_1 === 'US');
-      ageRating = usRating?.rating || null;
+    if (mediaType === 'movie' && 'release_dates' in data && data.release_dates) {
+        const usRelease = data.release_dates.results.find((r: TmdbReleaseDateResult) => r.iso_3166_1 === 'US');
+        if (usRelease && usRelease.release_dates.length > 0) {
+            const cert = usRelease.release_dates.find((rd) => rd.certification && (rd.type === 3 || rd.type === 4 || rd.type === 1));
+            if (cert) ageRating = cert.certification;
+            else if (usRelease.release_dates[0].certification) ageRating = usRelease.release_dates[0].certification;
+        }
+    } else if (mediaType === 'tv' && 'content_ratings' in data && data.content_ratings) {
+        const usRating = data.content_ratings.results.find((r: TmdbContentRatingResult) => r.iso_3166_1 === 'US');
+        if (usRating) ageRating = usRating.rating;
     }
 
-    const transformedCoreData = transformDetailedData(
-      data,
-      mediaType,
-      data.videos?.results || []
-    );
-
-    const genres = (data.genres || []).map((g: TMDBGenre) => ({
-      id: String(g.id),
-      name: g.name,
-    }));
-
-    const castMembers =
-      data.credits?.cast?.slice(0, 10).map((c: TMDBCast) => ({
+    const transformedCoreData = transformDetailedData(data, mediaType as 'movie' | 'tv', data.videos?.results || []);
+    const genres = data.genres?.map((g: TmdbGenre) => ({ id: String(g.id), name: g.name })) || [];
+    const castMembers = data.credits?.cast?.slice(0, 10).map((c: TmdbCastMember) => ({
         id: String(c.id),
         name: c.name,
         characterName: c.character,
-        imageUrl: getImageUrl(c.profile_path, 'w185'),
-      })) || [];
+        imageUrl: getTmdbImageUrl(c.profile_path, 'w185'),
+    })) || [];
+    const seasonsCount = mediaType === 'tv' && 'number_of_seasons' in data ? data.number_of_seasons : undefined;
 
-    const seasonsCount =
-      mediaType === 'tv' ? (data as TMDBTVDetails).number_of_seasons : undefined;
-
-    return NextResponse.json({
+    // Construct the final object ensuring all fields of DetailedContentData are considered
+    const responseData: DetailedContentData = {
       ...transformedCoreData,
+      // thumbnailUrl is not part of transformedCoreData if it was omitted, ensure it's handled or remove from DetailedContentData
+      thumbnailUrl: getTmdbImageUrl(data.poster_path, 'w500'), // Assuming this should be poster_path
       ageRating: ageRating || undefined,
       genres,
       castMembers,
       seasonsCount,
-    } as DetailedContentData);
+    };
+
+    return NextResponse.json(responseData);
+
   } catch (error) {
-    console.error(`Error fetching ${mediaType} details for ID ${id}:`, error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal Server'},
-      { status: 500 }
-    );
+    console.error(`Error in GET ${mediaType}/${id}:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Internal server error processing request', details: errorMessage }, { status: 500 });
   }
 }

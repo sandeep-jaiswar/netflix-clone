@@ -10,20 +10,26 @@ interface ContentItem {
   title: string;
   imageUrl: string | null;
   type: 'movie' | 'tv'; 
-  isInMyList?: boolean; // Added for My List status
+  isInMyList?: boolean; 
 }
 
 interface ContentRowProps {
   title: string;
   items: ContentItem[];
+  isLoading?: boolean;
   onCardClick?: (id: string, type: 'movie' | 'tv') => void; 
   onPlay?: (id: string) => void; 
-  onMyList?: (id: string, currentStatus: boolean, type: 'movie' | 'tv') => void; // Updated signature
+  onMyList?: (id: string, currentStatus: boolean, type: 'movie' | 'tv') => void; 
 }
+
+const SkeletonCard: React.FC = () => (
+  <div className="flex-shrink-0 w-[45vw] sm:w-[30vw] md:w-[23vw] lg:w-[18.5vw] xl:w-[15.5vw] 2xl:w-[calc(100%/7-0.875rem)] aspect-[16/9] md:aspect-[18/10] lg:aspect-[16/9] bg-netflix-gray-dark rounded-md animate-pulse"></div>
+);
 
 const ContentRow: React.FC<ContentRowProps> = ({
   title,
   items,
+  isLoading = false,
   onCardClick,
   onPlay,
   onMyList,
@@ -50,7 +56,7 @@ const ContentRow: React.FC<ContentRowProps> = ({
 
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (container) {
+    if (container && !isLoading) {
       const observer = new ResizeObserver(handleScrollability);
       observer.observe(container);
       handleScrollability();
@@ -60,7 +66,7 @@ const ContentRow: React.FC<ContentRowProps> = ({
         container.removeEventListener('scroll', handleScrollability);
       };
     }
-  }, [items, handleScrollability]);
+  }, [items, isLoading, handleScrollability]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -73,7 +79,8 @@ const ContentRow: React.FC<ContentRowProps> = ({
     }
   };
 
-  if (!items || items.length === 0) {
+  // Render nothing if loading and no items, or not loading and no items (e.g. API error for this row)
+  if (!isLoading && (!items || items.length === 0)) {
     return null;
   }
   
@@ -86,7 +93,7 @@ const ContentRow: React.FC<ContentRowProps> = ({
       </Heading>
       
       <div className="relative">
-        {canScroll && !isAtStart && (
+        {!isLoading && canScroll && !isAtStart && (
            <button
             onClick={() => scroll('left')}
             className={`${chevronBaseClasses} left-0 rounded-r-md`}
@@ -100,25 +107,22 @@ const ContentRow: React.FC<ContentRowProps> = ({
           ref={scrollContainerRef}
           className="flex space-x-2 md:space-x-3 lg:space-x-4 overflow-x-auto pb-4 scrollbar-hide"
         >
-          {items.map((item) => (
-            <div key={item.id} className="flex-shrink-0 w-[45vw] sm:w-[30vw] md:w-[23vw] lg:w-[18.5vw] xl:w-[15.5vw] 2xl:w-[calc(100%/7-0.875rem)]">
-              <ContentCard
-                id={item.id}
-                title={item.title}
-                imageUrl={item.imageUrl}
-                type={item.type} 
-                isInMyList={item.isInMyList} // Pass isInMyList to ContentCard
-                onClick={onCardClick ? () => onCardClick(item.id, item.type) : undefined}
-                onPlay={onPlay ? () => onPlay(item.id) : undefined}
-                // ContentCard's onMyListToggle expects (id, currentStatus, type?)
-                // The onMyList from props is (id, currentStatus, type)
-                onMyListToggle={onMyList ? () => onMyList(item.id, !!item.isInMyList, item.type) : undefined}
-              />
-            </div>
-          ))}
+          {isLoading 
+            ? Array.from({ length: 7 }).map((_, index) => <SkeletonCard key={`skeleton-${index}`} />) 
+            : items.map((item) => (
+                <div key={item.id} className="flex-shrink-0 w-[45vw] sm:w-[30vw] md:w-[23vw] lg:w-[18.5vw] xl:w-[15.5vw] 2xl:w-[calc(100%/7-0.875rem)]">
+                  <ContentCard
+                    {...item} // Spread all item props including id, title, imageUrl, type, isInMyList
+                    // Explicitly pass handlers if their names don't match item props or need transformation
+                    onClick={onCardClick ? () => onCardClick(item.id, item.type) : undefined}
+                    onPlay={onPlay ? () => onPlay(item.id) : undefined}
+                    onMyListToggle={onMyList ? () => onMyList(item.id, !!item.isInMyList, item.type) : undefined}
+                  />
+                </div>
+              ))}
         </div>
 
-        {canScroll && !isAtEnd && (
+        {!isLoading && canScroll && !isAtEnd && (
           <button
             onClick={() => scroll('right')}
             className={`${chevronBaseClasses} right-0 rounded-l-md`}
