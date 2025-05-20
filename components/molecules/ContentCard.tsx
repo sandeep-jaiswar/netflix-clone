@@ -6,9 +6,9 @@ import { Heading, Text } from '@/components/atoms';
 import { PlayCircle, PlusCircle, CheckCircle, ChevronDownCircle } from 'lucide-react';
 import { TmdbContentItem } from '@/types/tmdb';
 
-interface ContentCardProps extends TmdbContentItem { 
-  onClick?: (id: string, type: 'movie' | 'tv') => void; 
-  onPlay?: (id: string) => void; 
+interface ContentCardProps extends TmdbContentItem {
+  onClick?: (id: string, type: 'movie' | 'tv') => void;
+  onPlay?: (id: string) => void;
   onMyListToggle?: (id: string, currentStatus: boolean, type: 'movie' | 'tv') => void;
   isInMyList?: boolean;
 }
@@ -28,9 +28,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
   onMyListToggle,
   isInMyList = false,
 }) => {
-  
   const handleClick = () => onClick?.(id, type);
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -38,21 +37,10 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }
   };
 
-  // Overload signatures for type safety
-  function stopPropagationAndHandle(handler: ((id: string) => void) | undefined): (e: React.MouseEvent) => void;
-  function stopPropagationAndHandle(handler: ((id: string, itemType: 'movie' | 'tv') => void) | undefined, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
-  function stopPropagationAndHandle(handler: ((id: string, currentStatus: boolean, itemType: 'movie' | 'tv') => void) | undefined, currentStatus: boolean, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
-  
-  /**
-   * Returns an event handler that stops propagation and invokes the provided handler with the given arguments.
-   *
-   * @param handler - The function to call after stopping propagation.
-   * @param extraArgs - Additional arguments to pass to the handler.
-   * @returns A function suitable for use as a React mouse event handler.
-   *
-   * @remark The handler is only called if it is defined.
-   */
-  function stopPropagationAndHandle(handler?: (...args: any[]) => void, ...extraArgs: any[]): (e: React.MouseEvent) => void {
+  function stopPropagationAndHandle<T extends unknown[]>(
+    handler?: (id: string, ...args: T) => void,
+    ...extraArgs: T
+  ): (e: React.MouseEvent) => void {
     return (e: React.MouseEvent) => {
       e.stopPropagation();
       if (handler) {
@@ -89,8 +77,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
           <Text color="secondary" variant="small">No Image</Text>
         </div>
       )}
-      
-      <div 
+
+      <div
         className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 md:p-4 
                    bg-gradient-to-t from-black/95 via-black/80 to-transparent 
                    opacity-0 group-hover:opacity-100 
@@ -100,31 +88,30 @@ const ContentCard: React.FC<ContentCardProps> = ({
         <Heading as="h3" variant="cardTitle" className="!text-sm sm:!text-base md:!text-lg text-white truncate text-shadow-md mb-1 md:mb-1.5">
           {title}
         </Heading>
-        
+
         <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 md:mb-2 pointer-events-auto">
-          <button 
-            onClick={stopPropagationAndHandle(onPlay)} 
+          <button
+            onClick={stopPropagationAndHandle(onPlay)}
             className="p-1 sm:p-1.5 bg-white hover:bg-gray-200 rounded-full text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`Play ${title}`}
           >
             <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2} />
           </button>
-          <button 
+          <button
             onClick={stopPropagationAndHandle(onMyListToggle, isInMyList, type)}
             className="p-1 sm:p-1.5 border-2 border-white/60 hover:border-white rounded-full text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={isInMyList ? `Remove ${title} from My List` : `Add ${title} to My List`}
           >
-            {isInMyList 
-              ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2}/> 
-              : <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2}/>
-            }
+            {isInMyList
+              ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2} />
+              : <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2} />}
           </button>
-           <button 
+          <button
             onClick={stopPropagationAndHandle(onClick, type)}
             className="p-1 sm:p-1.5 border-2 border-white/60 hover:border-white rounded-full text-white/90 hover:text-white ml-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`More info for ${title}`}
           >
-            <ChevronDownCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2}/>
+            <ChevronDownCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" strokeWidth={2} />
           </button>
         </div>
 
