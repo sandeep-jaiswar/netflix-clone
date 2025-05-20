@@ -1,71 +1,6 @@
-// --- types/tmdb.ts ---
-
-export interface TMDBGenre {
-  id: number;
-  name: string;
-}
-
-export interface TMDBCast {
-  id: number;
-  name: string;
-  character: string;
-  profile_path: string | null;
-}
-
-export interface TMDBVideo {
-  key: string;
-  type: string;
-  site: string;
-}
-
-export interface TMDBReleaseDate {
-  certification: string;
-  type: number;
-}
-
-export interface TMDBReleaseDatesResult {
-  iso_3166_1: string;
-  release_dates: TMDBReleaseDate[];
-}
-
-export interface TMDBContentRating {
-  iso_3166_1: string;
-  rating: string;
-}
-
-export interface TMDBMovieDetails {
-  id: number;
-  title: string;
-  overview: string;
-  release_date: string;
-  runtime: number;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  genres: TMDBGenre[];
-  videos: { results: TMDBVideo[] };
-  credits: { cast: TMDBCast[] };
-  release_dates: { results: TMDBReleaseDatesResult[] };
-}
-
-export interface TMDBTVDetails {
-  id: number;
-  name: string;
-  overview: string;
-  first_air_date: string;
-  episode_run_time: number[];
-  number_of_seasons: number;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  genres: TMDBGenre[];
-  videos: { results: TMDBVideo[] };
-  credits: { cast: TMDBCast[] };
-  content_ratings: { results: TMDBContentRating[] };
-}
-
-export type TMDBMediaType = 'movie' | 'tv';
-export type TMDBDetailedResponse = TMDBMovieDetails | TMDBTVDetails;
-
 // types/tmdb.ts
+// This file contains transformed and application-specific data structures.
+// Raw TMDB API response types are defined in types/tmdb-api.ts
 
 export interface TmdbContentItem {
   id: string;
@@ -75,31 +10,33 @@ export interface TmdbContentItem {
   description?: string;
   releaseDate?: string;
   releaseYear?: string;
-  type: 'movie' | 'tv'; // Changed to be required
+  type: 'movie' | 'tv'; // Required for routing and API calls
   voteAverage?: number;
   matchPercentage?: number;
-  duration?: string;
-  genres?: string[];
+  duration?: string; // e.g., "2h 30m" or "45m"
+  genres?: string[]; // Transformed list of genre names for display
   maturityRating?: string; 
 }
 
+// Represents detailed content for modal views or detail pages within the application
 export interface TmdbDetailedContent extends Omit<TmdbContentItem, 'type' | 'genres' | 'backdropUrl'> {
-  type: 'MOVIE' | 'SHOW'; // This remains specific for detailed content (MOVIE/SHOW vs movie/tv)
-  heroImageUrl?: string | null; // For hero sections in detailed views
-  durationMinutes?: number;
-  ageRating?: string | null;
-  previewVideoUrl?: string | null;
-  genres?: { id: string; name: string }[];
+  type: 'MOVIE' | 'SHOW'; // Application-specific representation (uppercase)
+  heroImageUrl?: string | null; // Primary backdrop for detail views
+  durationMinutes?: number; // Raw duration in minutes
+  ageRating?: string | null; // e.g., "PG-13", "TV-MA"
+  previewVideoUrl?: string | null; // e.g., YouTube link
+  genres?: { id: string; name: string }[]; // Genres with IDs and names for detailed display/filtering
   castMembers?: {
     id: string;
     name: string;
     characterName?: string;
     imageUrl?: string | null;
   }[];
-  seasonsCount?: number;
-  isInMyList?: boolean;
+  seasonsCount?: number; // For TV shows
+  isInMyList?: boolean; // UI state: is this item in the user's list?
 }
 
+// Generic structure for API list responses (e.g., for categories, search results)
 export interface TmdbApiListResponse<T> {
   results: T[];
   page: number;
