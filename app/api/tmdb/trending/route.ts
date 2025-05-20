@@ -7,6 +7,12 @@ import { getTmdbImageUrl, getTmdbApiUrl, TMDB_API_KEY, TMDB_BASE_URL } from '@/u
 const movieGenresMap = new Map<number, string>();
 const tvGenresMap = new Map<number, string>();
 
+/**
+ * Fetches and caches movie and TV genre mappings from the TMDB API if not already loaded.
+ *
+ * @remark
+ * If the TMDB API key is missing, the function returns early without attempting to fetch genres.
+ */
 async function fetchGenres() {
   if (!TMDB_API_KEY) return; 
   if (movieGenresMap.size === 0) {
@@ -61,6 +67,16 @@ const transformTmdbItemToContentItem = (item: TmdbTrendingListItem, itemMediaTyp
   };
 };
 
+/**
+ * Handles GET requests to fetch trending movies and TV shows from the TMDB API.
+ *
+ * Retrieves trending media data based on query parameters for media type, time window, and page. Transforms TMDB results into a normalized format with genre names and metadata, and returns paginated results as JSON.
+ *
+ * @param request - The incoming HTTP request containing query parameters: `mediaType` ('movie', 'tv', or 'all'), `timeWindow` ('day' or 'week'), and `page`.
+ * @returns A JSON response with a list of trending content items and pagination details, or an error message if the request fails.
+ *
+ * @remark Returns a 500 error if the TMDB API key is not configured or if an unexpected error occurs. Returns TMDB error details if the TMDB API responds with an error.
+ */
 export async function GET(request: Request) {
   if (!TMDB_API_KEY) {
     return NextResponse.json({ error: 'TMDB API key is not configured' }, { status: 500 });
