@@ -26,6 +26,13 @@ const initialCategoriesToFetch = [
   // Add more categories here if needed
 ];
 
+/**
+ * Renders the main media browsing page with dynamic hero content, multiple categories, and a detail modal.
+ *
+ * Fetches trending content for the hero section and several categories from TMDB API endpoints, managing loading and error states for each. Handles user interactions for viewing content details, playing content, and toggling items in the user's "My List." Synchronizes "My List" status across the hero, categories, and modal detail views. Displays appropriate loading or error messages based on fetch states.
+ *
+ * @returns The complete browsing page UI, including hero, categories, and content detail modal.
+ */
 export default function HomePage() {
   const [heroData, setHeroData] = useState<PageHeroData | null>(null);
   const [categories, setCategories] = useState<PageCategory[]>(

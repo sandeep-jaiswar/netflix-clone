@@ -1,6 +1,11 @@
 // app/loading.tsx
 import React from 'react';
 
+/**
+ * Displays a full-screen loading indicator with a spinning animation and a "Loading Netflix..." message.
+ *
+ * Intended to be shown while the main page content is loading.
+ */
 export default function Loading() {
   // You can add any UI inside Loading, including a Skeleton.
   // This will be displayed while the main page.tsx content is loading.

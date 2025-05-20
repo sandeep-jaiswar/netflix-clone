@@ -39,6 +39,13 @@ const transformDetailedData = (data: TmdbDetailedResponse, mediaType: 'movie' | 
   };
 };
 
+/**
+ * Handles GET requests to fetch detailed media information from the TMDB API.
+ *
+ * Validates the TMDB API key and the provided media type, then retrieves and transforms detailed data for a movie or TV show, including core details, genres, cast members, age rating, and season count (for TV). Returns the combined data as a JSON response or an error message with the appropriate status code.
+ *
+ * @returns A JSON response containing detailed media content data or an error message.
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ mediaType: string; id: string }> } 
