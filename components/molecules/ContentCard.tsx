@@ -43,7 +43,15 @@ const ContentCard: React.FC<ContentCardProps> = ({
   function stopPropagationAndHandle(handler: ((id: string, itemType: 'movie' | 'tv') => void) | undefined, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
   function stopPropagationAndHandle(handler: ((id: string, currentStatus: boolean, itemType: 'movie' | 'tv') => void) | undefined, currentStatus: boolean, itemType: 'movie' | 'tv'): (e: React.MouseEvent) => void;
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /**
+   * Returns an event handler that stops propagation and invokes the provided handler with the given arguments.
+   *
+   * @param handler - The function to call after stopping propagation.
+   * @param extraArgs - Additional arguments to pass to the handler.
+   * @returns A function suitable for use as a React mouse event handler.
+   *
+   * @remark The handler is only called if it is defined.
+   */
   function stopPropagationAndHandle(handler?: (...args: any[]) => void, ...extraArgs: any[]): (e: React.MouseEvent) => void {
     return (e: React.MouseEvent) => {
       e.stopPropagation();
